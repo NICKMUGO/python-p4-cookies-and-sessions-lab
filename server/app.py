@@ -17,18 +17,39 @@ db.init_app(app)
 
 @app.route('/clear')
 def clear_session():
+    session.clear()
     session['page_views'] = 0
     return {'message': '200: Successfully cleared session data.'}, 200
 
 @app.route('/articles')
 def index_articles():
-
-    pass
-
+    articles = Article.query.all()
+    return make_response(jsonify({'status': 'success', 'data': [article.to_dict() for article in articles]}) , 200)
 @app.route('/articles/<int:id>')
 def show_article(id):
+    session['page_views'] = session.get('page_views', 0)
+    session['page_views']+=1
 
-    pass
+    if session['page_views'] <=3:
+        article =Article.query.filter_by(id=Article.id).first()
+        response = {
+            "id" :  article.id,
+            "author" : article.author,
+            "title": article.title,
+            "content": article.content,
+            "preview" : article.preview,
+            "minutes_to_read" :  article.minutes_to_read,
+            "date" : article.date,
+            "views": session['page_views'],
+        }
+        status_code = 200
+    else:
+        response={'message': 'Maximum pageview limit reached'}
+        status_code = 401
+    
+    return jsonify(response),status_code
+
+
 
 if __name__ == '__main__':
     app.run(port=5555)
